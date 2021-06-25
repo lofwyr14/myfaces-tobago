@@ -20,6 +20,7 @@
 package org.apache.myfaces.tobago.internal.renderkit.renderer;
 
 import org.apache.myfaces.tobago.context.Markup;
+import org.apache.myfaces.tobago.internal.component.AbstractUIFormBase;
 import org.apache.myfaces.tobago.internal.component.AbstractUISelectOneRadio;
 import org.apache.myfaces.tobago.internal.component.AbstractUISelectReference;
 import org.apache.myfaces.tobago.internal.util.ArrayUtils;
@@ -33,16 +34,39 @@ import org.apache.myfaces.tobago.renderkit.html.HtmlElements;
 import org.apache.myfaces.tobago.renderkit.html.HtmlInputTypes;
 import org.apache.myfaces.tobago.util.ComponentUtils;
 import org.apache.myfaces.tobago.webapp.TobagoResponseWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.faces.context.FacesContext;
 import javax.faces.model.SelectItem;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 public class SelectOneRadioRenderer<T extends AbstractUISelectOneRadio> extends SelectOneRendererBase<T> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public HtmlElements getComponentTag() {
     return HtmlElements.TOBAGO_SELECT_ONE_RADIO;
+  }
+
+  @Override
+  protected String getDecodingId(final FacesContext facesContext, final T component) {
+    final String group = component.getGroup();
+    final String name;
+    if (group != null) {
+      final AbstractUIFormBase form = ComponentUtils.findForm(component);
+      if (form != null) {
+        name = form.getClientId(facesContext) + facesContext.getNamingContainerSeparatorChar() + group;
+      } else {
+        LOG.warn("Can't find form for grouping id.");
+        name = group;
+      }
+    } else {
+      name = component.getClientId(facesContext);
+    }
+    return name;
   }
 
   @Override
@@ -60,6 +84,7 @@ public class SelectOneRadioRenderer<T extends AbstractUISelectOneRadio> extends 
     final boolean inline = component.isInline();
     final Markup markup = component.getMarkup();
     final boolean isInsideCommand = isInside(facesContext, HtmlElements.COMMAND);
+    final String name = getDecodingId(facesContext, component);
 
     writer.startElement(getTag(facesContext));
     writer.writeClassAttribute(
@@ -92,7 +117,7 @@ public class SelectOneRadioRenderer<T extends AbstractUISelectOneRadio> extends 
           checked = ObjectUtils.equals(formattedValue, submittedValue);
         }
         writer.writeAttribute(HtmlAttributes.CHECKED, checked);
-        writer.writeNameAttribute(id);
+        writer.writeNameAttribute(name);
         writer.writeIdAttribute(itemId);
         writer.writeAttribute(HtmlAttributes.VALUE, formattedValue, true);
         writer.writeAttribute(HtmlAttributes.DISABLED, itemDisabled);
