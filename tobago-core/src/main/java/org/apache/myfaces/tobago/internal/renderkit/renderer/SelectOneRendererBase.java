@@ -41,12 +41,10 @@ public abstract class SelectOneRendererBase<T extends AbstractUISelectOneBase> e
       return;
     }
 
-    final String decodingId = getDecodingId(facesContext, component);
+    final String clientId = component.getClientId(facesContext);
     final Object newValue =
-        facesContext.getExternalContext().getRequestParameterMap().get(decodingId);
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("decode: key='" + decodingId + "' value='" + newValue + "'");
-    }
+        facesContext.getExternalContext().getRequestParameterMap().get(clientId);
+    LOG.debug("decode: key='{}' value='{}'", clientId, newValue);
     component.setSubmittedValue(newValue);
 
     decodeClientBehaviors(facesContext, component);

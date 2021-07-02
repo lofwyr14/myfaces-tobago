@@ -24,7 +24,7 @@ import org.apache.myfaces.tobago.apt.annotation.UIComponentTagAttribute;
 
 public interface HasGroup {
   /**
-   *
+   * XXX Warning: Not fully implemented yet! For further use to be flexible with layout of radio and multi checkboxes.
    */
   @TagAttribute
   @UIComponentTagAttribute

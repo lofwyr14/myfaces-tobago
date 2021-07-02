@@ -19,6 +19,7 @@
 
 package org.apache.myfaces.tobago.internal.renderkit.renderer;
 
+import org.apache.myfaces.tobago.component.Attributes;
 import org.apache.myfaces.tobago.context.Markup;
 import org.apache.myfaces.tobago.internal.component.AbstractUIFormBase;
 import org.apache.myfaces.tobago.internal.component.AbstractUISelectOneRadio;
@@ -47,6 +48,30 @@ public class SelectOneRadioRenderer<T extends AbstractUISelectOneRadio> extends 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
+  public void decodeInternal(final FacesContext facesContext, final T component) {
+    if (isOutputOnly(component)) {
+      return;
+    }
+    final String group = component.getGroup();
+    if (StringUtils.isBlank(group)) {
+      super.decodeInternal(facesContext, component);
+    } else {
+      final String decodingId = getDecodingId(facesContext, component);
+      final Object newValue = facesContext.getExternalContext().getRequestParameterMap().get(decodingId);
+      LOG.debug("decode: key='{}' value='{}'", decodingId, newValue);
+      if (component.getValueExpression(Attributes.value.name()) != null) {
+        LOG.debug("setSubmittedValue");
+        component.setSubmittedValue(newValue);
+      } else {
+        LOG.debug("resetValue");
+        component.resetValue();
+      }
+
+      decodeClientBehaviors(facesContext, component);
+    }
+  }
+
+  @Override
   public HtmlElements getComponentTag() {
     return HtmlElements.TOBAGO_SELECT_ONE_RADIO;
   }
@@ -55,7 +80,7 @@ public class SelectOneRadioRenderer<T extends AbstractUISelectOneRadio> extends 
   protected String getDecodingId(final FacesContext facesContext, final T component) {
     final String group = component.getGroup();
     final String name;
-    if (group != null) {
+    if (StringUtils.isNotBlank(group)) {
       final AbstractUIFormBase form = ComponentUtils.findForm(component);
       if (form != null) {
         name = form.getClientId(facesContext) + facesContext.getNamingContainerSeparatorChar() + group;
