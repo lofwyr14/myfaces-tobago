@@ -27,7 +27,6 @@ enum StateEnum {
 
 interface StateData {
   state: StateEnum;
-  hideTime: string;
 }
 
 const BootstrapToastEvent = {

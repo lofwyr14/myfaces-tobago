@@ -87,7 +87,7 @@
     <demo-highlight language="markup">&lt;tc:toasts id="progressBarToasts" value="\#{toastsController.progressBars}"
            var="progress" disposeDelay="-1" markup="hideCloseButton">
   &lt;f:facet name="reload">
-    &lt;tc:reload frequency="100"/>
+    &lt;tc:reload frequency="500"/>
   &lt;/f:facet>
   &lt;f:facet name="header">
     &lt;tc:out value="Progress" plain="true"/>
@@ -103,7 +103,7 @@
     <tc:toasts id="progressBarToasts" value="#{toastsController.progressBars}" var="progress" disposeDelay="-1"
                markup="hideCloseButton">
       <f:facet name="reload">
-        <tc:reload frequency="100"/>
+        <tc:reload frequency="500"/>
       </f:facet>
       <f:facet name="header">
         <tc:out value="Progress" plain="true"/>

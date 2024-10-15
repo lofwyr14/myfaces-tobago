@@ -47,8 +47,6 @@ import jakarta.faces.component.UIComponent;
 import jakarta.faces.context.FacesContext;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -82,7 +80,7 @@ public class ToastsRenderer<T extends AbstractUIToasts> extends RendererBase<T> 
       final List<String> idsForRemoval = new ArrayList<>();
       states.forEach((key, value) -> {
         if (value.state.equals(StateEnum.closed)
-            || value.hideTime != null && value.hideTime.isBefore(LocalTime.now())
+            || value.hideTime != 0 && value.hideTime < System.currentTimeMillis()
             || !toastIds.contains(key)) {
           idsForRemoval.add(key);
         }
@@ -110,25 +108,19 @@ public class ToastsRenderer<T extends AbstractUIToasts> extends RendererBase<T> 
 
       String id = null;
       StateEnum state = null;
-      LocalTime hideTime = null;
 
       while (tokenizer.hasMoreTokens()) {
         final String token = tokenizer.nextToken().trim();
 
-        if (!token.equals(":") && !token.equals("state") && !token.equals("hideTime")) {
+        if (!token.equals(":") && !token.equals("state")) {
           if (id == null) {
             id = token;
           } else if (state == null) {
             state = StateEnum.valueOf(token);
           } else {
-            if (!token.equals(":null")) {
-              hideTime = LocalTime.parse(token);
-            }
-
-            result.put(id, new StateData(state, hideTime));
+            result.put(id, new StateData(state, Long.parseLong(token)));
             id = null;
             state = null;
-            hideTime = null;
           }
         }
       }
@@ -170,7 +162,7 @@ public class ToastsRenderer<T extends AbstractUIToasts> extends RendererBase<T> 
         final String toastId = clientId + ComponentUtils.SUB_SEPARATOR + toast.getId();
 
         if (!states.containsKey(toastId)) {
-          states.put(toastId, new StateData(StateEnum.created, null));
+          states.put(toastId, new StateData(StateEnum.created, 0L));
         }
         final StateData stateData = states.get(toastId);
 
@@ -189,16 +181,16 @@ public class ToastsRenderer<T extends AbstractUIToasts> extends RendererBase<T> 
         if (stateData.state.equals(StateEnum.created)) {
           writer.writeAttribute(DataAttributes.DISPOSE_DELAY, disposeDelay);
           if (disposeDelay > 0) {
-            LocalTime hideTime = LocalTime.now().plus(disposeDelay, ChronoUnit.MILLIS);
+            long hideTime = System.currentTimeMillis() + disposeDelay;
             states.put(toastId, new StateData(StateEnum.created, hideTime));
           }
         } else if (stateData.state.equals(StateEnum.showed)) {
-          if (stateData.hideTime != null) {
-            int decreasedDisposeDelay = (int) LocalTime.now().until(stateData.hideTime, ChronoUnit.MILLIS);
-            writer.writeAttribute(DataAttributes.DISPOSE_DELAY, Math.max(decreasedDisposeDelay, 0));
+          if (stateData.hideTime > 0L) {
+            long decreasedDisposeDelay = stateData.hideTime - System.currentTimeMillis();
+            writer.writeAttribute(DataAttributes.DISPOSE_DELAY, Math.max(decreasedDisposeDelay, 0L));
 
             if (decreasedDisposeDelay <= 0) {
-              states.put(toastId, new StateData(StateEnum.closed, null));
+              states.put(toastId, new StateData(StateEnum.closed, 0L));
             }
           } else {
             writer.writeAttribute(DataAttributes.DISPOSE_DELAY, disposeDelay);
@@ -275,7 +267,7 @@ public class ToastsRenderer<T extends AbstractUIToasts> extends RendererBase<T> 
       builder.append(entry.getValue().state);
       builder.append("\",\"hideTime\":");
 
-      if (entry.getValue().hideTime != null) {
+      if (entry.getValue().hideTime != 0L) {
         builder.append("\"");
         builder.append(entry.getValue().hideTime);
         builder.append("\"");
@@ -312,9 +304,9 @@ public class ToastsRenderer<T extends AbstractUIToasts> extends RendererBase<T> 
 
   public static class StateData {
     private final StateEnum state;
-    private final LocalTime hideTime;
+    private final long hideTime;
 
-    public StateData(StateEnum state, LocalTime hideTime) {
+    public StateData(StateEnum state, long hideTime) {
       this.state = state;
       this.hideTime = hideTime;
     }
@@ -323,7 +315,7 @@ public class ToastsRenderer<T extends AbstractUIToasts> extends RendererBase<T> 
       return state;
     }
 
-    public LocalTime getHideTime() {
+    public long getHideTime() {
       return hideTime;
     }
   }
